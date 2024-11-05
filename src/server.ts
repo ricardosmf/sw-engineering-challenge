@@ -1,7 +1,7 @@
 import app from './app';
-import connectDB from './database';
+import connectDB from './config/db';
 import dotenv from 'dotenv';
-import { PORT_APP } from './core/config/config';
+import { PORT_APP } from './config/config';
 
 dotenv.config();
 
