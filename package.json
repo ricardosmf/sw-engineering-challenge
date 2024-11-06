@@ -4,23 +4,13 @@
   "description": "An API for Bloqit",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "start": "tsc && node dist/app.js",
     "test": "jest --forceExit --detectOpenHandles",
     "seed:test": "ts-node src/scripts/seed.ts",
     "test:integration": "npm run seed:test && npm run test"
   },
-  "keywords": [
-    "express",
-    "typescript",
-    "mongoose",
-    "jest",
-    "supertest",
-    "api"
-  ],
   "author": "Ricardo Ferreira",
-  "license": "MIT",
+  "license": "ISC",
   "dependencies": {
     "@types/uuid": "^10.0.0",
     "dotenv": "^16.3.1",
