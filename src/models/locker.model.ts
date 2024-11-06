@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 import { LockerStatus } from "../types/enums";
 import { v4 as uuidv4 } from 'uuid';
 

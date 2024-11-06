@@ -9,6 +9,6 @@
     "skipLibCheck": true,                     // Skip type checking of declaration files
     "forceConsistentCasingInFileNames": true  // Disallow inconsistently-cased references to the same file
   },
-  "include": ["src", "tests/unit/services/locker.service.test.ts", "tests/unit/services/bloq.service.test.ts", "tests/unit/repositories/locker.repository.test.ts", "tests/unit/repositories/rent.repository.test.ts", "tests/unit/controllers/rent.controller.test.ts"],                          // Specify which files to include in the compilation
+  "include": ["src"],                          // Specify which files to include in the compilation
   "exclude": ["node_modules", "dist", "tests"] // Specify which files to exclude from the compilation
 }

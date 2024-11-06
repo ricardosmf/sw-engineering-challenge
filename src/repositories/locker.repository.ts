@@ -1,5 +1,4 @@
 import { ILocker, Locker } from "../models/locker.model";
-import { LockerStatus } from "../types/enums";
 import { ILockerRepository } from "./interfaces/locker.repository.interface";
 
 export class LockerRepository implements ILockerRepository {

@@ -1,4 +1,3 @@
-// rent.model.ts
 import { model, Schema } from "mongoose";
 import { Document } from 'mongoose';
 import { RentSize, RentStatus } from "../types/enums";
