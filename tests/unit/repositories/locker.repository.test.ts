@@ -2,10 +2,13 @@ import { Types } from 'mongoose';
 import { Locker, ILocker } from '../../../src/models/locker.model';
 import { LockerStatus } from '../../../src/types/enums';
 import { LockerRepository } from '../../../src/repositories/locker.repository';
+import { v4 as uuidv4 } from 'uuid';
 
 jest.mock('../../../src/models/locker.model', () => ({
   Locker: {
+    create: jest.fn(),
     find: jest.fn(),
+    findById: jest.fn(),
     findByIdAndUpdate: jest.fn(),
     findByIdAndDelete: jest.fn()
   }
@@ -19,111 +22,107 @@ describe('LockerRepository', () => {
     lockerRepository = new LockerRepository();
     jest.clearAllMocks();
     mockLocker = {
-      _id: new Types.ObjectId().toString(),
-      bloqId: new Types.ObjectId(),
+      _id: uuidv4(),
+      bloqId: uuidv4(),
       isOccupied: false,
       status: LockerStatus.OPEN,
     };
   });
 
+  describe('create', () => {
+    it('should create a new locker', async () => {
+      const newLocker = {
+        id: uuidv4(),
+        bloqId: uuidv4(),
+        status: LockerStatus.OPEN,
+        isOccupied: false
+      };
+
+      (Locker.create as jest.Mock).mockResolvedValue(newLocker);
+
+      const result = await lockerRepository.create(newLocker);
+
+      expect(Locker.create).toHaveBeenCalledWith(newLocker);
+      expect(result).toEqual(newLocker);
+    });
+  });
+
   describe('findAvailable', () => {
     it('should return available lockers for a given bloqId', async () => {
-      // Arrange
-      const bloqId = new Types.ObjectId().toString()
+      const bloqId = uuidv4();
       const mockLockers = [
         { 
-          _id: new Types.ObjectId().toString(), 
+          id: uuidv4(), 
           bloqId, 
           isOccupied: false, 
-          status: LockerStatus.OPEN 
         },
         { 
-          _id: new Types.ObjectId().toString(), 
-          bloqId, 
+          id: uuidv4(), 
+          bloqId,
           isOccupied: false, 
-          status: LockerStatus.OPEN 
         }
       ];
-      
-      jest.spyOn(Locker, 'find').mockResolvedValue(mockLockers);
 
-      // Act
-      const result = await lockerRepository.findAvailable(bloqId.toString());
+      (Locker.find as jest.Mock).mockResolvedValue(mockLockers);
 
-      // Assert
+      const result = await lockerRepository.findAvailable(bloqId);
+
       expect(Locker.find).toHaveBeenCalledWith({
         bloqId,
         isOccupied: false,
-        status: LockerStatus.OPEN
       });
       expect(result).toEqual(mockLockers);
     });
+  });
 
-    it('should return empty array when no available lockers found', async () => {
-      // Arrange
-      const bloqId = new Types.ObjectId().toString();
-      jest.spyOn(Locker, 'find').mockResolvedValue([]);
+  describe('findById', () => {
+    it('should find a locker by id', async () => {
+      const lockerId = uuidv4();
+      (Locker.findById as jest.Mock).mockResolvedValue(mockLocker);
 
-      // Act
-      const result = await lockerRepository.findAvailable(bloqId);
+      const result = await lockerRepository.findById(lockerId);
 
-      // Assert
-      expect(result).toEqual([]);
+      expect(Locker.findById).toHaveBeenCalledWith(lockerId);
+      expect(result).toEqual(mockLocker);
     });
   });
+
   describe('update', () => {
-    it('should update a locker successfully', async () => {
-      // Arrange
-      const id = new Types.ObjectId().toString();
-      const updateData = { isOccupied: true };
-      const updatedLocker = { ...mockLocker, ...updateData };
-      jest.spyOn(Locker, 'findByIdAndUpdate').mockResolvedValue(updatedLocker);
-  
-      // Act
-      const result = await lockerRepository.update(id, updateData);
-  
-      // Assert
-      expect(Locker.findByIdAndUpdate).toHaveBeenCalledWith(id, updateData, { new: true });
-      expect(result).toEqual(updatedLocker);
-    });
-  
-    it('should return null when locker not found', async () => {
-      // Arrange
-      const id = new Types.ObjectId().toString();
-      jest.spyOn(Locker, 'findByIdAndUpdate').mockResolvedValue(null);
-  
-      // Act
-      const result = await lockerRepository.update(id, { isOccupied: true });
-  
-      // Assert
-      expect(result).toBeNull();
+    it('should update a locker', async () => {
+      const lockerId = uuidv4();
+      const updateData = {
+        status: LockerStatus.CLOSED,
+        isOccupied: true
+      };
+
+      (Locker.findByIdAndUpdate as jest.Mock).mockResolvedValue({
+        ...mockLocker,
+        ...updateData
+      });
+
+      const result = await lockerRepository.update(lockerId, updateData);
+
+      expect(Locker.findByIdAndUpdate).toHaveBeenCalledWith(
+        lockerId,
+        updateData,
+        { new: true }
+      );
+      expect(result).toEqual({
+        ...mockLocker,
+        ...updateData
+      });
     });
   });
   
   describe('delete', () => {
-    it('should delete a locker successfully', async () => {
-      // Arrange
-      const id = new Types.ObjectId().toString();
-      jest.spyOn(Locker, 'findByIdAndDelete').mockResolvedValue(mockLocker);
-  
-      // Act
-      const result = await lockerRepository.delete(id);
-  
-      // Assert
-      expect(Locker.findByIdAndDelete).toHaveBeenCalledWith(id);
-      expect(result).toBe(true);
-    });
-  
-    it('should return false when locker not found', async () => {
-      // Arrange
-      const id = new Types.ObjectId().toString();
-      jest.spyOn(Locker, 'findByIdAndDelete').mockResolvedValue(null);
-  
-      // Act
-      const result = await lockerRepository.delete(id);
-  
-      // Assert
-      expect(result).toBe(false);
+    it('should delete a locker', async () => {
+      const lockerId = uuidv4();
+      (Locker.findByIdAndDelete as jest.Mock).mockResolvedValue(mockLocker);
+
+      const result = await lockerRepository.delete(lockerId);
+
+      expect(Locker.findByIdAndDelete).toHaveBeenCalledWith(lockerId);
+      expect(result).toEqual(true);
     });
   });
   

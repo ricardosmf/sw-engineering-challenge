@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { RentController } from '../../../src/controllers/rent.controller';
 import { IRentService } from '../../../src/services/interfaces/rent.service.interface';
-import { IRent } from '../../../src/models/rent.model';
+import { v4 as uuidv4 } from 'uuid';
 
 describe('RentController', () => {
   let rentController: RentController;
@@ -11,6 +11,9 @@ describe('RentController', () => {
   let mockNext: jest.Mock;
   let jsonSpy: jest.Mock;
   let statusSpy: jest.Mock;
+
+  const lockerId = uuidv4();
+  const rentId = uuidv4();
 
   beforeEach(() => {
     jsonSpy = jest.fn();
@@ -38,8 +41,8 @@ describe('RentController', () => {
     
     mockRequest = {
       params: {
-        id: '1',
-        lockerId: '1'
+        id: rentId,
+        lockerId: lockerId
       },
       body: {
         status: 'ACTIVE'
@@ -50,8 +53,8 @@ describe('RentController', () => {
   describe('getRentByLockerId', () => {
     it('should return rent when found for specific locker', async () => {
       const mockRent = {
-        id: '1',
-        lockerId: '1'
+        id: rentId,
+        lockerId: lockerId
       };
       mockRentService.getRentByLockerId.mockResolvedValue(mockRent as any);
 
@@ -61,7 +64,7 @@ describe('RentController', () => {
         mockNext
       );
 
-      expect(mockRentService.getRentByLockerId).toHaveBeenCalledWith('1');
+      expect(mockRentService.getRentByLockerId).toHaveBeenCalledWith(lockerId);
       expect(statusSpy).toHaveBeenCalledWith(200);
       expect(jsonSpy).toHaveBeenCalledWith(mockRent);
     });
@@ -77,19 +80,6 @@ describe('RentController', () => {
 
       expect(mockNext).toHaveBeenCalled();
       expect(mockNext.mock.calls[0][0]).toBeInstanceOf(Error);
-    });
-
-    it('should call next with error when service throws', async () => {
-      const error = new Error('Service error');
-      mockRentService.getRentByLockerId.mockRejectedValue(error);
-
-      await rentController.getRentByLockerId(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 });

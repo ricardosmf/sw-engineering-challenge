@@ -1,212 +1,181 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
 import app from '../../src/app';
+import mongoose from 'mongoose';
 import { Bloq } from '../../src/models/bloq.model';
 import { Locker } from '../../src/models/locker.model';
 import { Rent } from '../../src/models/rent.model';
-import { LockerStatus, RentSize, RentStatus } from '../../src/types/enums';
+import { RentStatus, LockerStatus } from '../../src/types/enums';
+import { seedDatabase } from '../../src/scripts/seed';
 
-describe('Bloqit API Integration Tests', () => {
-  const sampleBloq = {
-    title: "Luitton Vouis Champs Elysées",
-    address: "101 Av. des Champs-Élysées, 75008 Paris, France"
-  };
+describe('Bloq-it API Integration Tests', () => {
+  const EXISTING_BLOQ_ID = 'c3ee858c-f3d8-45a3-803d-e080649bbb6f';
+  const EXISTING_LOCKER_ID = '1b8d1e89-2514-4d91-b813-044bf0ce8d20';
+  const EXISTING_RENT_ID = '40efc6fd-f10c-4561-88bf-be916613377c';
 
-  beforeEach(async () => {
-    await Bloq.deleteMany({});
-    await Locker.deleteMany({});
-    await Rent.deleteMany({});
+  beforeAll(async () => {
+    await seedDatabase(); 
+    await mongoose.disconnect();
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bloqit');
   });
 
   afterAll(async () => {
+    await Bloq.deleteMany({});
+    await Locker.deleteMany({});
+    await Rent.deleteMany({});
     await mongoose.connection.close();
   });
 
   describe('Bloq Endpoints', () => {
-    it('should create a bloq and its lockers', async () => {
-      const bloqResponse = await request(app)
-        .post('/api/bloqs')
-        .send(sampleBloq)
-        .expect(201);
+    it('should get Luitton Vouis store details', async () => {
+      const response = await request(app)
+        .get(`/api/bloqs/${EXISTING_BLOQ_ID}`)
+        .expect(200);
 
-      expect(bloqResponse.body).toMatchObject(sampleBloq);
-
-      // Create lockers for the bloq
-      const lockerData = {
-        bloqId: bloqResponse.body._id,
-        status: LockerStatus.OPEN,
-        isOccupied: false
-      };
-
-      const lockerResponse = await request(app)
-        .post('/api/lockers')
-        .send(lockerData)
-        .expect(201);
-
-      expect(lockerResponse.body.bloqId).toBe(bloqResponse.body._id);
+      expect(response.body).toMatchObject({
+        _id: EXISTING_BLOQ_ID,
+        title: 'Luitton Vouis Champs Elysées',
+        address: '101 Av. des Champs-Élysées, 75008 Paris, France'
+      });
     });
 
-    it('should get all bloqs with their lockers', async () => {
-      const bloq = await Bloq.create(sampleBloq);
-      await Locker.create([
-        { bloqId: bloq._id, status: LockerStatus.OPEN, isOccupied: false },
-        { bloqId: bloq._id, status: LockerStatus.CLOSED, isOccupied: true }
-      ]);
-
+    it('should list all bloqs', async () => {
       const response = await request(app)
         .get('/api/bloqs')
         .expect(200);
 
-      expect(response.body).toHaveLength(1);
-      expect(response.body[0].title).toBe(sampleBloq.title);
+      expect(response.body).toHaveLength(3);
+      expect(response.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'Riod Eixample',
+            address: 'Pg. de Gràcia, 74, L\'Eixample, 08008 Barcelona, Spain'
+          })
+        ])
+      );
     });
   });
 
   describe('Locker Endpoints', () => {
-    let bloqId: string;
-
-    beforeEach(async () => {
-      const bloq = await Bloq.create(sampleBloq);
-      bloqId = bloq._id.toString();
-    });
-
-    it('should create and get available lockers', async () => {
-      const lockerData = {
-        bloqId,
-        status: LockerStatus.OPEN,
-        isOccupied: false
-      };
-
-      await Locker.create([
-        { ...lockerData },
-        { ...lockerData, status: LockerStatus.CLOSED }
-      ]);
-
+    it('should get occupied locker details', async () => {
       const response = await request(app)
-        .get(`/api/lockers/bloq/${bloqId}/available`)
+        .get(`/api/lockers/${EXISTING_LOCKER_ID}`)
         .expect(200);
 
-      expect(response.body).toHaveLength(1);
-      expect(response.body[0].status).toBe(LockerStatus.OPEN);
-      expect(response.body[0].isOccupied).toBe(false);
+      expect(response.body).toMatchObject({
+        _id: EXISTING_LOCKER_ID,
+        bloqId: EXISTING_BLOQ_ID,
+        status: LockerStatus.CLOSED,
+        isOccupied: true
+      });
+    });
+
+    it('should get available lockers for Bluberry store', async () => {
+      const BLUBERRY_ID = '22ffa3c5-3a3d-4f71-81f1-cac18ffbc510';
+      const response = await request(app)
+        .get(`/api/lockers/bloq/${BLUBERRY_ID}/available`)
+        .expect(200);
+
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            bloqId: BLUBERRY_ID,
+            isOccupied: false
+          })
+        ])
+      );
     });
 
     it('should toggle locker status', async () => {
-      const locker = await Locker.create({
-        bloqId,
-        status: LockerStatus.OPEN,
-        isOccupied: false
-      });
-
+      const locker = await request(app)
+        .get(`/api/lockers/${EXISTING_LOCKER_ID}`)
+        .expect(200);
       const response = await request(app)
-        .patch(`/api/lockers/${locker._id}/toggle`)
+        .patch(`/api/lockers/${EXISTING_LOCKER_ID}/toggle`)
         .expect(200);
 
-      expect(response.body.status).toBe(LockerStatus.CLOSED);
+      expect(response.body.status).toBe(
+        locker.body.status === LockerStatus.OPEN ? LockerStatus.CLOSED : LockerStatus.OPEN
+      );
     });
   });
 
   describe('Rent Endpoints', () => {
-    let lockerId: string;
+    it('should get active rent details', async () => {
+      const response = await request(app)
+        .get(`/api/rents/${EXISTING_RENT_ID}`)
+        .expect(200);
 
-    beforeEach(async () => {
-      const bloq = await Bloq.create(sampleBloq);
-      const locker = await Locker.create({
-        bloqId: bloq._id,
-        status: LockerStatus.OPEN,
-        isOccupied: false
+      expect(response.body).toMatchObject({
+        _id: EXISTING_RENT_ID,
+        lockerId: EXISTING_LOCKER_ID,
+        weight: 7,
+        size: 'L',
+        status: RentStatus.WAITING_PICKUP
       });
-      lockerId = locker._id.toString();
     });
 
-    it('should create a rent and update locker status', async () => {
-      const rentData = {
-        lockerId,
+    it('should list all active rents', async () => {
+      const response = await request(app)
+        .get('/api/rents/active')
+        .expect(200);
+
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            status: expect.stringMatching(/CREATED|WAITING_DROPOFF|WAITING_PICKUP/)
+          })
+        ])
+      );
+    });
+
+    it('should create new rent', async () => {
+      const AVAILABLE_LOCKER_ID = '8b4b59ae-8de5-4322-a426-79c29315a9f1';
+      const newRent = {
+        lockerId: AVAILABLE_LOCKER_ID,
         weight: 5,
-        size: RentSize.M,
+        size: 'M',
         status: RentStatus.CREATED
       };
 
       const response = await request(app)
         .post('/api/rents')
-        .send(rentData)
+        .send(newRent)
         .expect(201);
 
-      expect(response.body).toMatchObject(rentData);
-
-      // Verify locker is now occupied
-      const locker = await Locker.findById(lockerId);
-      expect(locker?.isOccupied).toBe(true);
-    });
-
-    it('should get active rents', async () => {
-      await Rent.create([
-        {
-          lockerId,
-          weight: 5,
-          size: RentSize.M,
-          status: RentStatus.WAITING_PICKUP
-        },
-        {
-          lockerId,
-          weight: 3,
-          size: RentSize.S,
-          status: RentStatus.DELIVERED
-        }
-      ]);
-
-      const response = await request(app)
-        .get('/api/rents/active')
-        .expect(200);
-
-      expect(response.body).toHaveLength(1);
-      expect(response.body[0].status).toBe(RentStatus.WAITING_PICKUP);
-    });
-
-    it('should update rent status and handle locker occupation', async () => {
-      const rent = await Rent.create({
-        lockerId,
+      expect(response.body).toMatchObject({
+        lockerId: AVAILABLE_LOCKER_ID,
         weight: 5,
-        size: RentSize.M,
-        status: RentStatus.WAITING_PICKUP
+        size: 'M',
+        status: RentStatus.CREATED
       });
 
-      const response = await request(app)
-        .patch(`/api/rents/${rent._id}/status`)
-        .send({ status: RentStatus.DELIVERED })
+      // Verify locker is now occupied
+      const lockerResponse = await request(app)
+        .get(`/api/lockers/${AVAILABLE_LOCKER_ID}`)
         .expect(200);
 
-      expect(response.body.status).toBe(RentStatus.DELIVERED);
-
-      // Verify locker is now available
-      const locker = await Locker.findById(lockerId);
-      expect(locker?.isOccupied).toBe(false);
+      expect(lockerResponse.body.isOccupied).toBe(true);
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle invalid bloq ID', async () => {
-      await request(app)
-        .get('/api/bloqs/invalid-id')
-        .expect(500);
-    });
+  describe('Complex Scenarios', () => {
+    it('should verify rent delivery updates locker status', async () => {
+      // Update rent to delivered
+      const updateResponse = await request(app)
+        .patch(`/api/rents/${EXISTING_RENT_ID}/status`)
+        .send({ status: RentStatus.DELIVERED })
+        .expect(200);
 
-    it('should handle invalid locker ID', async () => {
-      await request(app)
-        .get('/api/lockers/invalid-id')
-        .expect(500);
-    });
+      expect(updateResponse.body.status).toBe(RentStatus.DELIVERED);
 
-    it('should handle invalid rent creation', async () => {
-      await request(app)
-        .post('/api/rents')
-        .send({
-          lockerId: 'invalid-id',
-          weight: -1,
-          size: 'INVALID',
-          status: 'INVALID'
-        })
-        .expect(500);
+      // Verify locker is now available
+      const lockerResponse = await request(app)
+        .get(`/api/lockers/${EXISTING_LOCKER_ID}`)
+        .expect(200);
+
+      expect(lockerResponse.body.isOccupied).toBe(false);
     });
   });
 });

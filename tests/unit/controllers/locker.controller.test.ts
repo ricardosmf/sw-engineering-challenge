@@ -1,6 +1,7 @@
 import { ILockerService } from '../../../src/services/interfaces/locker.service.interface';
 import { Request, Response } from 'express';
 import { LockerController } from '../../../src/controllers/locker.controller';
+import { v4 as uuidv4 } from 'uuid';
 
 describe('toggleLockerStatus', () => {
   let mockLockerService: jest.Mocked<ILockerService>;
@@ -10,6 +11,7 @@ describe('toggleLockerStatus', () => {
   let mockNext: jest.Mock;
   let jsonSpy: jest.Mock;
   let statusSpy: jest.Mock;
+  const lockerId = uuidv4();
 
   beforeEach(() => {
     jsonSpy = jest.fn();
@@ -25,16 +27,17 @@ describe('toggleLockerStatus', () => {
       toggleLockerStatus: jest.fn(),
     } as any;
     lockerController = new LockerController(mockLockerService);
+    
     mockRequest = {
       params: {
-        id: '123'
+        id: lockerId
       }
     };
   });
 
   it('should successfully toggle locker status', async () => {
     const mockLocker = { 
-      id: '123', 
+      id: lockerId, 
       status: 'OCCUPIED',
     };
     mockLockerService.toggleLockerStatus.mockResolvedValue(mockLocker as any);
@@ -45,7 +48,7 @@ describe('toggleLockerStatus', () => {
       mockNext
     );
 
-    expect(mockLockerService.toggleLockerStatus).toHaveBeenCalledWith('123');
+    expect(mockLockerService.toggleLockerStatus).toHaveBeenCalledWith(lockerId);
     expect(jsonSpy).toHaveBeenCalledWith(mockLocker);
   });
   

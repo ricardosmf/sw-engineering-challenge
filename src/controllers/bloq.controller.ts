@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { IBloqService } from '../services/interfaces/bloq.service.interface';
+import { BloqNotFoundError } from '../errors/bloq.errors';
 
 export class BloqController {
   constructor(private bloqService: IBloqService) {}
@@ -42,8 +43,13 @@ export class BloqController {
 
   async deleteBloq(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await this.bloqService.deleteBloq(req.params.id);
-      res.status(204).send();
+      const { id } = req.params;
+      const deleted = await this.bloqService.deleteBloq(id);
+      if (deleted) {
+        res.status(204).send();
+      } else {
+        throw new BloqNotFoundError(id);
+      }
     } catch (error) {
       next(error);
     }

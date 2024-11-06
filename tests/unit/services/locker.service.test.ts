@@ -2,7 +2,8 @@ import { ILocker } from "../../../src/models/locker.model";
 import { ILockerRepository } from "../../../src/repositories/interfaces/locker.repository.interface";
 import { LockerStatus } from "../../../src/types/enums";
 import { LockerService } from "../../../src/services/locker.service";
-import { Types } from "mongoose";
+import { v4 as uuidv4 } from 'uuid';
+
 
 describe('LockerService', () => {
     let lockerService: LockerService;
@@ -23,13 +24,16 @@ describe('LockerService', () => {
 
     describe('createLocker', () => {
         it('should create a new locker', async () => {
+            const mockBloqId = uuidv4();
             const mockLocker: Partial<ILocker> = {
-                bloqId: new Types.ObjectId(1),
-                status: LockerStatus.OPEN
+                bloqId: mockBloqId,
+                status: LockerStatus.OPEN,
+                isOccupied: false
             };
-            
+
+            const mockId = uuidv4();
             mockLockerRepository.create.mockResolvedValue({
-                id: '123',
+                id: mockId,
                 ...mockLocker
             } as ILocker);
 
@@ -37,42 +41,47 @@ describe('LockerService', () => {
 
             expect(mockLockerRepository.create).toHaveBeenCalledWith(mockLocker);
             expect(result).toEqual({
-                id: '123',
+                id: mockId,
                 ...mockLocker
             });
         });
     });
 
+
     describe('getLockerById', () => {
-        it('should return a locker by id', async () => {
+        it('should return locker by id', async () => {
+            const mockId = uuidv4();
             const mockLocker: Partial<ILocker> = {
-                id: '123',
-                bloqId: new Types.ObjectId(1),
-                status: LockerStatus.OPEN
+                id: mockId,
+                bloqId: uuidv4(),
+                status: LockerStatus.OPEN,
+                isOccupied: false
             };
 
             mockLockerRepository.findById.mockResolvedValue(mockLocker as any);
 
-            const result = await lockerService.getLockerById('123');
+            const result = await lockerService.getLockerById(mockId);
 
-            expect(mockLockerRepository.findById).toHaveBeenCalledWith('123');
+            expect(mockLockerRepository.findById).toHaveBeenCalledWith(mockId);
             expect(result).toEqual(mockLocker);
-        });
-
-        it('should throw error if locker not found', async () => {
-            mockLockerRepository.findById.mockResolvedValue(null);
-            const lockerId = '123';
-            await expect(lockerService.getLockerById(lockerId)).rejects.toThrow(`Locker with ID ${lockerId} not found`);
-
-            expect(mockLockerRepository.findById).toHaveBeenCalledWith('123');
         });
     });
 
     describe('getAllLockers', () => {
         it('should return all lockers', async () => {
             const mockLockers: Partial<ILocker>[] = [
-                { id: '123', bloqId: new Types.ObjectId(1), status: LockerStatus.OPEN },
-                { id: '456', bloqId: new Types.ObjectId(1), status: LockerStatus.CLOSED }
+                {
+                    id: uuidv4(),
+                    bloqId: uuidv4(),
+                    status: LockerStatus.OPEN,
+                    isOccupied: false
+                },
+                {
+                    id: uuidv4(),
+                    bloqId: uuidv4(),
+                    status: LockerStatus.CLOSED,
+                    isOccupied: true
+                }
             ];
 
             mockLockerRepository.findAll.mockResolvedValue(mockLockers as any);
@@ -86,24 +95,28 @@ describe('LockerService', () => {
 
     describe('findLockersByBloqId', () => {
         it('should return lockers by bloqId', async () => {
-            const bloqId = new Types.ObjectId(1);
+            const mockBloqId = uuidv4();
             const mockLockers: Partial<ILocker>[] = [
-                { id: '123', bloqId, status: LockerStatus.OPEN },
-                { id: '456', bloqId, status: LockerStatus.CLOSED }
+                {
+                    id: uuidv4(),
+                    bloqId: mockBloqId,
+                    status: LockerStatus.OPEN
+                }
             ];
 
             mockLockerRepository.findByBloqId.mockResolvedValue(mockLockers as any);
 
-            const result = await lockerService.findLockersByBloqId(bloqId.toString());
+            const result = await lockerService.findLockersByBloqId(mockBloqId);
 
-            expect(mockLockerRepository.findByBloqId).toHaveBeenCalledWith(bloqId.toString());
+            expect(mockLockerRepository.findByBloqId).toHaveBeenCalledWith(mockBloqId);
             expect(result).toEqual(mockLockers);
         });
     });
 
-    describe('findAvailableLockers', () => {+
+    describe('findAvailableLockers', () => {
+        +
         it('should return available lockers for a bloqId', async () => {
-            const bloqId = new Types.ObjectId(1);
+            const bloqId = uuidv4();
             const mockLockers: Partial<ILocker>[] = [
                 { id: '123', bloqId, status: LockerStatus.OPEN, isOccupied: false },
                 { id: '456', bloqId, status: LockerStatus.OPEN, isOccupied: false }

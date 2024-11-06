@@ -1,16 +1,23 @@
 import { model, Schema } from "mongoose";
 import { Document, Types } from 'mongoose';
 import { LockerStatus } from "../types/enums";
+import { v4 as uuidv4 } from 'uuid';
 
 export interface ILocker extends Document {
-  bloqId: Types.ObjectId;
-  status: LockerStatus;
-  isOccupied: boolean;
+    _id: string;
+    bloqId: string;
+    status: LockerStatus;
+    isOccupied: boolean;
 }
 
 const LockerSchema = new Schema<ILocker>({
+    _id: {
+        type: String,
+        default: uuidv4,
+        required: true
+    },
     bloqId: {
-        type: Schema.Types.ObjectId,
+        type: String,
         ref: 'Bloq',
         required: true
     },
@@ -24,7 +31,8 @@ const LockerSchema = new Schema<ILocker>({
         default: false
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    _id: false
 });
 
 export const Locker = model<ILocker>('Locker', LockerSchema);

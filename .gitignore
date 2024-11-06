@@ -4,6 +4,7 @@ node_modules
 # Build or temporary outputs
 out/
 *.ignore.*
+dist/
 
 # Jest
 coverage

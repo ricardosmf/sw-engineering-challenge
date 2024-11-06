@@ -2,6 +2,7 @@ import { RentSize, RentStatus } from '../../../src/types/enums';
 import { IRentRepository } from '../../../src/repositories/interfaces/rent.repository.interface';
 import { ILockerRepository } from '../../../src/repositories/interfaces/locker.repository.interface';
 import { RentService } from '../../../src/services/rent.service';
+import { v4 as uuidv4 } from 'uuid';
 
 describe('createRent', () => {
   let rentService: RentService;
@@ -33,7 +34,8 @@ describe('createRent', () => {
     rentService = new RentService(rentRepository, lockerRepository);
   });
 
-  const validLockerId = 'validLockerId';
+  const validLockerId = uuidv4();
+  const validRentId = uuidv4();
 
   const validRentData = {
     lockerId: validLockerId,
@@ -44,7 +46,7 @@ describe('createRent', () => {
 
   it('should create rent successfully with valid data', async () => {
     const mockLocker = { id: validLockerId, isOccupied: false };
-    const mockCreatedRent = { ...validRentData, _id: 'rentId123' };
+    const mockCreatedRent = { ...validRentData, _id: validRentId };
 
     (lockerRepository.findById as jest.Mock).mockResolvedValue(mockLocker);
     (rentRepository.create as jest.Mock).mockResolvedValue(mockCreatedRent);
@@ -79,8 +81,8 @@ describe('createRent', () => {
   });
 
   it('should update locker status after creating rent', async () => {
-    const mockLocker = { id: 'validLockerId', isOccupied: false };
-    const mockCreatedRent = { ...validRentData, _id: 'rentId123' };
+    const mockLocker = { id: validLockerId, isOccupied: false };
+    const mockCreatedRent = { ...validRentData, _id: validRentId };
 
     (lockerRepository.findById as jest.Mock).mockResolvedValue(mockLocker);
     (rentRepository.create as jest.Mock).mockResolvedValue(mockCreatedRent);
@@ -88,29 +90,28 @@ describe('createRent', () => {
     await rentService.createRent(validRentData as any);
 
     expect(lockerRepository.update).toHaveBeenCalledWith(
-      'validLockerId',
+      validLockerId,
       { isOccupied: true }
     );
   });
 
   describe('updateRent', () => {
     it('should update rent successfully', async () => {
-      const rentId = 'rent123';
       const updateData = { weight: 3.0 };
       const updatedRent = { ...validRentData, ...updateData };
 
       rentRepository.update.mockResolvedValue(updatedRent as any);
 
-      const result = await rentService.updateRent(rentId, updateData);
+      const result = await rentService.updateRent(validRentId, updateData);
 
       expect(result).toEqual(updatedRent);
-      expect(rentRepository.update).toHaveBeenCalledWith(rentId, updateData);
+      expect(rentRepository.update).toHaveBeenCalledWith(validRentId, updateData);
     });
   });
 
   describe('deleteRent', () => {
     it('should delete rent successfully', async () => {
-      const rentId = 'rent123';
+      const rentId = validRentId;
       rentRepository.delete.mockResolvedValue(true);
 
       const result = await rentService.deleteRent(rentId);
@@ -122,7 +123,7 @@ describe('createRent', () => {
 
   describe('updateRentStatus', () => {
     it('should update rent status and free locker when delivered', async () => {
-      const rentId = 'rent123';
+      const rentId = validRentId;
       const mockRent = { ...validRentData, id: rentId };
       const updatedRent = { ...mockRent, status: RentStatus.DELIVERED };
 
@@ -159,7 +160,7 @@ describe('createRent', () => {
 
   describe('getRentsByLockerId', () => {
     it('should return rents for specific locker', async () => {
-      const lockerId = 'locker123';
+      const lockerId = validLockerId;
       const lockerRents = validRentData;
       rentRepository.findByLockerId.mockResolvedValue(lockerRents as any);
 

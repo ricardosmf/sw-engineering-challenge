@@ -1,6 +1,7 @@
 import { BloqService } from '../../../src/services/bloq.service';
 import { IBloqRepository } from '../../../src/repositories/interfaces/bloq.repository.interface';
 import { IBloq } from '../../../src/models/bloq.model';
+import { v4 as uuidv4 } from 'uuid';
 
 describe('BloqService', () => {
 
@@ -28,7 +29,7 @@ describe('BloqService', () => {
       };
 
       const mockCreatedBloq: Partial<IBloq> = {
-        id: '123',
+        id: uuidv4(),
         title: mockBloqData.title!,
         address: mockBloqData.address!
       };
@@ -64,111 +65,114 @@ describe('BloqService', () => {
   describe('getBloqById', () => {
     it('should return a bloq when found', async () => {
       // Arrange
+      const mockId = uuidv4();
       const mockBloq: Partial<IBloq> = {
-        _id: '123',
+        id: mockId,
         title: 'Test Bloq',
         address: 'Test Address',
       };
       mockBloqRepository.findById.mockResolvedValue(mockBloq as IBloq);
-  
+
       // Act
-      const result = await bloqService.getBloqById('123');
-  
+      const result = await bloqService.getBloqById(mockId);
+
       // Assert
-      expect(mockBloqRepository.findById).toHaveBeenCalledWith('123');
+      expect(mockBloqRepository.findById).toHaveBeenCalledWith(mockId);
       expect(result).toEqual(mockBloq);
     });
-  
+
     it('should throw error when bloq not found', async () => {
       // Arrange
       const nonExistentId = 'nonexistent';
       mockBloqRepository.findById.mockResolvedValue(null);
-  
+
       // Act & Assert
       await expect(bloqService.getBloqById(nonExistentId)).rejects.toThrow(`Bloq with ID ${nonExistentId} not found`);
       expect(mockBloqRepository.findById).toHaveBeenCalledWith(nonExistentId);
     });
   });
-  
+
   describe('getAllBloqs', () => {
     it('should return all bloqs', async () => {
       // Arrange
       const mockBloqs: Partial<IBloq>[] = [
         {
-          _id: '123',
+          _id: uuidv4(),
           title: 'Bloq 1',
           address: 'Address 1',
         },
         {
-          _id: '456',
+          _id: uuidv4(),
           title: 'Bloq 2',
           address: 'Address 2',
         }
       ];
       mockBloqRepository.findAll.mockResolvedValue(mockBloqs as IBloq[]);
-  
+
       // Act
       const result = await bloqService.getAllBloqs();
-  
+
       // Assert
       expect(mockBloqRepository.findAll).toHaveBeenCalled();
       expect(result).toEqual(mockBloqs);
     });
   });
-  
+
   describe('updateBloq', () => {
     it('should successfully update a bloq', async () => {
       // Arrange
+      const mockId = uuidv4();
       const updateData: Partial<IBloq> = {
         title: 'Updated Title',
         address: 'Updated Address'
       };
       const updatedBloq: Partial<IBloq> = {
-        _id: '123',
+        id: mockId,
         ...updateData,
       };
       mockBloqRepository.update.mockResolvedValue(updatedBloq as IBloq);
-  
+
       // Act
-      const result = await bloqService.updateBloq('123', updateData);
-  
+      const result = await bloqService.updateBloq(mockId, updateData);
+
       // Assert
-      expect(mockBloqRepository.update).toHaveBeenCalledWith('123', updateData);
+      expect(mockBloqRepository.update).toHaveBeenCalledWith(mockId, updateData);
       expect(result).toEqual(updatedBloq);
     });
-  
+
     it('should return null when updating non-existent bloq', async () => {
       // Arrange
       mockBloqRepository.update.mockResolvedValue(null);
-  
+
       // Act
       const result = await bloqService.updateBloq('nonexistent', { title: 'New Title' });
-  
+
       // Assert
       expect(result).toBeNull();
     });
   });
-  
+
   describe('deleteBloq', () => {
     it('should successfully delete a bloq', async () => {
       // Arrange
+      const mockId = uuidv4();
       mockBloqRepository.delete.mockResolvedValue(true);
-  
+
       // Act
-      const result = await bloqService.deleteBloq('123');
-  
+      const result = await bloqService.deleteBloq(mockId);
+
       // Assert
-      expect(mockBloqRepository.delete).toHaveBeenCalledWith('123');
+      expect(mockBloqRepository.delete).toHaveBeenCalledWith(mockId);
       expect(result).toBe(true);
     });
-  
+
     it('should return false when deleting non-existent bloq', async () => {
       // Arrange
       mockBloqRepository.delete.mockResolvedValue(false);
-  
+
       // Act
       const result = await bloqService.deleteBloq('nonexistent');
-  
+
       // Assert
       expect(mockBloqRepository.delete).toHaveBeenCalledWith('nonexistent');
       expect(result).toBe(false);

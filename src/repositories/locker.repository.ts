@@ -4,6 +4,9 @@ import { ILockerRepository } from "./interfaces/locker.repository.interface";
 
 export class LockerRepository implements ILockerRepository {
   async create(locker: Partial<ILocker>): Promise<ILocker> {
+    if (locker.isOccupied === undefined) {
+      locker.isOccupied = false;
+    }
     return await Locker.create(locker);
   }
 
@@ -16,6 +19,9 @@ export class LockerRepository implements ILockerRepository {
   }
 
   async update(id: string, locker: Partial<ILocker>): Promise<ILocker | null> {
+    if (locker.isOccupied === undefined) {
+      locker.isOccupied = false;
+    }
     return await Locker.findByIdAndUpdate(id, locker, { new: true });
   }
 
@@ -31,8 +37,7 @@ export class LockerRepository implements ILockerRepository {
   async findAvailable(bloqId: string): Promise<ILocker[]> {
     return await Locker.find({
       bloqId,
-      isOccupied: false,
-      status: LockerStatus.OPEN
+      isOccupied: false
     });
   }
 }

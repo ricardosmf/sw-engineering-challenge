@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 // Mock Mongoose connection
 beforeAll(async () => {
-  const url = 'mongodb://127.0.0.1:27017/test';
+  const url = 'mongodb://localhost:27017/bloqit';
   await mongoose.connect(url);
 });
 

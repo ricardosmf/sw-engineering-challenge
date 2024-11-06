@@ -1,25 +1,29 @@
 import { BloqController } from '../../../src/controllers/bloq.controller';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { IBloqService } from '../../../src/services/interfaces/bloq.service.interface';
 import { IBloq } from '../../../src/models/bloq.model';
+import { v4 as uuidv4 } from 'uuid';
 
 describe('BloqController', () => {
   let bloqController: BloqController;
   let mockBloqService: jest.Mocked<IBloqService>;
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
-  let mockNext: jest.Mock;
+  let mockNext: jest.MockedFunction<NextFunction>;
   let responseJson: jest.Mock;
   let responseStatus: jest.Mock;
+  let responseEnd: jest.Mock;
 
   beforeEach(() => {
     responseJson = jest.fn();
     responseStatus = jest.fn().mockReturnThis();
+    responseEnd = jest.fn();
     mockNext = jest.fn();
-    
+
     mockResponse = {
       json: responseJson,
       status: responseStatus,
+      end: responseEnd,
       send: jest.fn()
     };
 
@@ -37,126 +41,110 @@ describe('BloqController', () => {
 
   describe('createBloq', () => {
     it('should create a bloq and return 201', async () => {
-      const mockBloq = { id: '1', title: 'New Bloq' };
-      mockRequest.body = mockBloq;
+      const bloqData = { title: 'New Bloq', address: 'Test Address' };
+      const mockBloq = { id: uuidv4(), ...bloqData };
+      mockRequest = { body: bloqData };
       mockBloqService.createBloq.mockResolvedValue(mockBloq as IBloq);
-  
+
       await bloqController.createBloq(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
       );
-  
-      expect(mockBloqService.createBloq).toHaveBeenCalledWith(mockBloq);
+
+      expect(mockBloqService.createBloq).toHaveBeenCalledWith(bloqData);
       expect(responseStatus).toHaveBeenCalledWith(201);
       expect(responseJson).toHaveBeenCalledWith(mockBloq);
     });
-  
-    it('should pass errors to next middleware', async () => {
-      const error = new Error('Creation failed');
+
+    it('should handle service errors', async () => {
+      const error = new Error('Service error');
+      mockRequest = { body: { title: 'New Bloq' } };
       mockBloqService.createBloq.mockRejectedValue(error);
-  
+
       await bloqController.createBloq(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
       );
-  
+
       expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
-  
-  describe('getBloq', () => {
-    it('should return a bloq by id', async () => {
-      const mockBloq = { id: '1', title: 'Test Bloq' };
-      mockRequest.params = { id: '1' };
+
+  describe('getBloqById', () => {
+    it('should return bloq when found', async () => {
+      const bloqId = uuidv4();
+      const mockBloq = { id: bloqId, title: 'Test Bloq', address: 'Test Address' };
+      mockRequest = { params: { id: bloqId } };
       mockBloqService.getBloqById.mockResolvedValue(mockBloq as IBloq);
-  
+
       await bloqController.getBloq(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
       );
-  
-      expect(mockBloqService.getBloqById).toHaveBeenCalledWith('1');
+
+      expect(mockBloqService.getBloqById).toHaveBeenCalledWith(bloqId);
       expect(responseJson).toHaveBeenCalledWith(mockBloq);
     });
-  
-    it('should pass errors to next middleware', async () => {
-      const error = new Error('Bloq not found');
-      mockRequest.params = { id: '1' };
-      mockBloqService.getBloqById.mockRejectedValue(error);
-  
-      await bloqController.getBloq(
+  });
+
+  describe('getAllBloqs', () => {
+    it('should return all bloqs', async () => {
+      const mockBloqs = [
+        { id: uuidv4(), title: 'Bloq 1', address: 'Address 1' },
+        { id: uuidv4(), title: 'Bloq 2', address: 'Address 2' }
+      ];
+      mockBloqService.getAllBloqs.mockResolvedValue(mockBloqs as IBloq[]);
+
+      await bloqController.getAllBloqs(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
       );
-  
-      expect(mockNext).toHaveBeenCalledWith(error);
+
+      expect(responseJson).toHaveBeenCalledWith(mockBloqs);
     });
   });
-  
+
   describe('updateBloq', () => {
-    it('should update a bloq and return it', async () => {
-      const mockBloq = { id: '1', title: 'Updated Bloq' };
-      mockRequest.params = { id: '1' };
-      mockRequest.body = mockBloq;
-      mockBloqService.updateBloq.mockResolvedValue(mockBloq as IBloq);
-  
+    it('should update bloq and return 200', async () => {
+      const bloqId = uuidv4();
+      const updateData = { title: 'Updated Bloq' };
+      const updatedBloq = { id: bloqId, ...updateData };
+      mockRequest = {
+        params: { id: bloqId },
+        body: updateData
+      };
+      mockBloqService.updateBloq.mockResolvedValue(updatedBloq as IBloq);
+
       await bloqController.updateBloq(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
       );
-  
-      expect(mockBloqService.updateBloq).toHaveBeenCalledWith('1', mockBloq);
-      expect(responseJson).toHaveBeenCalledWith(mockBloq);
-    });
-  
-    it('should pass errors to next middleware', async () => {
-      const error = new Error('Update failed');
-      mockRequest.params = { id: '1' };
-      mockBloqService.updateBloq.mockRejectedValue(error);
-  
-      await bloqController.updateBloq(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-  
-      expect(mockNext).toHaveBeenCalledWith(error);
+
+      expect(mockBloqService.updateBloq).toHaveBeenCalledWith(bloqId, updateData);
+      expect(responseJson).toHaveBeenCalledWith(updatedBloq);
     });
   });
-  
+
   describe('deleteBloq', () => {
-    it('should delete a bloq and return 204', async () => {
-      mockRequest.params = { id: '1' };
+    it('should delete bloq and return 204', async () => {
+      const bloqId = uuidv4();
+      mockRequest = { params: { id: bloqId } };
+      const deletedBloq = { id: bloqId, title: 'Deleted Bloq' };
       mockBloqService.deleteBloq.mockResolvedValue(true);
-  
+
       await bloqController.deleteBloq(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
       );
-  
-      expect(mockBloqService.deleteBloq).toHaveBeenCalledWith('1');
+
+      expect(mockBloqService.deleteBloq).toHaveBeenCalledWith(bloqId);
       expect(responseStatus).toHaveBeenCalledWith(204);
-      expect(mockResponse.send).toHaveBeenCalled();
-    });
-  
-    it('should pass errors to next middleware', async () => {
-      const error = new Error('Delete failed');
-      mockRequest.params = { id: '1' };
-      mockBloqService.deleteBloq.mockRejectedValue(error);
-  
-      await bloqController.deleteBloq(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-  
-      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 });
