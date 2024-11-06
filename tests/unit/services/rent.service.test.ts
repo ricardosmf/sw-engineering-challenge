@@ -33,15 +33,17 @@ describe('createRent', () => {
     rentService = new RentService(rentRepository, lockerRepository);
   });
 
+  const validLockerId = 'validLockerId';
+
   const validRentData = {
-    lockerId: 'validLockerId',
+    lockerId: validLockerId,
     weight: 2.5,
     size: RentSize.M,
     status: RentStatus.CREATED
   };
 
   it('should create rent successfully with valid data', async () => {
-    const mockLocker = { id: 'validLockerId', isOccupied: false };
+    const mockLocker = { id: validLockerId, isOccupied: false };
     const mockCreatedRent = { ...validRentData, _id: 'rentId123' };
 
     (lockerRepository.findById as jest.Mock).mockResolvedValue(mockLocker);
@@ -50,8 +52,8 @@ describe('createRent', () => {
     const result = await rentService.createRent(validRentData as any);;
 
     expect(result).toEqual(mockCreatedRent);
-    expect(lockerRepository.findById).toHaveBeenCalledWith('validLockerId');
-    expect(lockerRepository.update).toHaveBeenCalledWith('validLockerId', { isOccupied: true });
+    expect(lockerRepository.findById).toHaveBeenCalledWith(validLockerId);
+    expect(lockerRepository.update).toHaveBeenCalledWith(validLockerId, { isOccupied: true });
     expect(rentRepository.create).toHaveBeenCalledWith(validRentData);
   });
 
@@ -60,18 +62,18 @@ describe('createRent', () => {
 
     await expect(rentService.createRent(validRentData as any))
       .rejects
-      .toThrow('Locker not found');
+      .toThrow(`Locker with ID ${validLockerId} not found`);
 
     expect(rentRepository.create).not.toHaveBeenCalled();
   });
 
   it('should throw error when locker is occupied', async () => {
-    const occupiedLocker = { id: 'validLockerId', isOccupied: true };
+    const occupiedLocker = { id: validLockerId, isOccupied: true };
     (lockerRepository.findById as jest.Mock).mockResolvedValue(occupiedLocker);
 
     await expect(rentService.createRent(validRentData as any))
       .rejects
-      .toThrow('Locker is already occupied');
+      .toThrow(`Locker with ID ${validLockerId} is already occupied`);
 
     expect(rentRepository.create).not.toHaveBeenCalled();
   });
@@ -134,11 +136,12 @@ describe('createRent', () => {
     });
 
     it('should throw error when rent not found', async () => {
+      const invalidRentId = 'invalid-id';
       rentRepository.findById.mockResolvedValue(null);
 
-      await expect(rentService.updateRentStatus('invalid-id', RentStatus.DELIVERED))
+      await expect(rentService.updateRentStatus(invalidRentId, RentStatus.DELIVERED))
         .rejects
-        .toThrow('Rent not found');
+        .toThrow(`Rent with ID ${invalidRentId} not found`);
     });
   });
 

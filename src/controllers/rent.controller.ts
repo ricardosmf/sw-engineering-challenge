@@ -1,79 +1,102 @@
-import { Request, Response } from 'express';
-import { IRentService } from '../services/interfaces/rent.service.interface';
+import { Request, Response, NextFunction } from 'express';
+import { RentService } from '../services/rent.service';
+import { RentStatus } from '../types/enums';
+import { RentNotFoundError, RentNotFoundForLockerError, RentValidationError } from '../errors/rent.errors';
+import { IRent } from '../models/rent.model';
 
 export class RentController {
-  constructor(private rentService: IRentService) {}
+  constructor(private rentService: RentService) {}
 
-  async createRent(req: Request, res: Response): Promise<void> {
+  async createRent(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const rent = await this.rentService.createRent(req.body);
-      res.status(201).json(rent);
+      const locker = await this.rentService.createRent(req.body);
+      res.status(201).json(locker);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to create rent' });
+      next(error);
     }
   }
 
-  async getRent(req: Request, res: Response): Promise<void> {
-    try {
-      const rent = await this.rentService.getRentById(req.params.id);
-      if (!rent) {
-        res.status(404).json({ error: 'Rent not found' });
-        return;
-      }
-      res.json(rent);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to get rent' });
-    }
-  }
-
-  async getAllRents(req: Request, res: Response): Promise<void> {
+  async getAllRents(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const rents = await this.rentService.getAllRents();
-      if (!rents) {
-        res.status(404).json({ error: 'Rents not found' });
-        return;
-      }
-      res.json(rents);
+      res.status(200).json(rents);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to get all rents' });
+      next(error);
     }
-  }
+  };
 
-  async updateRentStatus(req: Request, res: Response): Promise<void> {
+  async getRentById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const rent = await this.rentService.updateRentStatus(
-        req.params.id,
-        req.body.status
-      );
-      res.json(rent);
+      const { id } = req.params;
+      const rent = await this.rentService.getRentById(id);
+      res.status(200).json(rent);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to update rent status' });
+      next(error);
     }
-  }
+  };
 
-  async getActiveRents(req: Request, res: Response): Promise<void> {
+  async updateRent(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const rents = await this.rentService.getActiveRents();
-      if (!rents) {
-        res.status(404).json({ error: 'Rents not found' });
-        return;
-      }
-      res.json(rents);
+      const { id } = req.params;
+      const rentData = req.body;
+      const updatedRent = await this.rentService.updateRent(id, rentData);
+      res.status(200).json(updatedRent);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to get active rents' });
+      next(error);
     }
-  }
+  };
 
-  async getRentByLocker(req: Request, res: Response): Promise<void> {
+  async deleteRent(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const rents = await this.rentService.getRentByLockerId(req.params.lockerId);
-      if (!rents) {
-        res.status(404).json({ error: 'Rent not found' });
-        return;
+      const { id } = req.params;
+      const deleted = await this.rentService.deleteRent(id);
+      if (deleted) {
+        res.status(204).send();
+      } else {
+        throw new RentNotFoundError(id);
       }
-      res.json(rents);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to get rent by locker' });
+      next(error);
     }
-  }
+  };
+
+  async updateRentStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!Object.values(RentStatus).includes(status)) {
+        throw new RentValidationError('Invalid rent status');
+      }
+
+      const updatedRent = await this.rentService.updateRentStatus(id, status);
+      res.status(200).json(updatedRent);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  async getActiveRents(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const activeRents = await this.rentService.getActiveRents();
+      res.status(200).json(activeRents);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  async getRentByLockerId(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { lockerId } = req.params;
+      const rent = await this.rentService.getRentByLockerId(lockerId);
+      
+      if (!rent) {
+        throw new RentNotFoundForLockerError(lockerId);
+      }
+      
+      res.status(200).json(rent);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

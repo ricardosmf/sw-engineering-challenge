@@ -79,16 +79,14 @@ describe('BloqService', () => {
       expect(result).toEqual(mockBloq);
     });
   
-    it('should return null when bloq not found', async () => {
+    it('should throw error when bloq not found', async () => {
       // Arrange
+      const nonExistentId = 'nonexistent';
       mockBloqRepository.findById.mockResolvedValue(null);
   
-      // Act
-      const result = await bloqService.getBloqById('nonexistent');
-  
-      // Assert
-      expect(mockBloqRepository.findById).toHaveBeenCalledWith('nonexistent');
-      expect(result).toBeNull();
+      // Act & Assert
+      await expect(bloqService.getBloqById(nonExistentId)).rejects.toThrow(`Bloq with ID ${nonExistentId} not found`);
+      expect(mockBloqRepository.findById).toHaveBeenCalledWith(nonExistentId);
     });
   });
   

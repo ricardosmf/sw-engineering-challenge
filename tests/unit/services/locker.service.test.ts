@@ -59,13 +59,12 @@ describe('LockerService', () => {
             expect(result).toEqual(mockLocker);
         });
 
-        it('should return null if locker not found', async () => {
+        it('should throw error if locker not found', async () => {
             mockLockerRepository.findById.mockResolvedValue(null);
-
-            const result = await lockerService.getLockerById('123');
+            const lockerId = '123';
+            await expect(lockerService.getLockerById(lockerId)).rejects.toThrow(`Locker with ID ${lockerId} not found`);
 
             expect(mockLockerRepository.findById).toHaveBeenCalledWith('123');
-            expect(result).toBeNull();
         });
     });
 

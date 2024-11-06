@@ -11,6 +11,7 @@ import { RentRepository } from './repositories/rent.repository';
 import { RentService } from './services/rent.service';
 import { BloqRepository } from './repositories/bloq.repository';
 import { BloqService } from './services/bloq.service';
+import { errorHandler } from './middleware/error.middleware';
 
 const app: Application = express();
 
@@ -34,5 +35,7 @@ app.use(express.json());
 app.use('/api/bloqs', bloqRouter(bloqController));
 app.use('/api/lockers', lockerRouter(lockerController));
 app.use('/api/rents', rentRouter(rentController));
+
+app.use(errorHandler);
 
 export default app;
