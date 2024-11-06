@@ -28,7 +28,7 @@ export const lockerRouter = (lockerController: LockerController): Router => {
       lockerController.updateLocker(req, res, next)
     );
     
-    router.post('/:id/toggle', (req, res, next) => 
+    router.patch('/:id/toggle', (req, res, next) => 
       lockerController.toggleLockerStatus(req, res, next)
     );
     
