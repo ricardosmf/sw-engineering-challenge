@@ -32,7 +32,7 @@ export class LockerRepository implements ILockerRepository {
     return await Locker.find({
       bloqId,
       isOccupied: false,
-      status: LockerStatus.CLOSED
+      status: LockerStatus.OPEN
     });
   }
 }

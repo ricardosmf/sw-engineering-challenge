@@ -24,8 +24,8 @@ export class RentRepository implements IRentRepository {
     return !!result;
   }
 
-  async findByLockerId(lockerId: string): Promise<IRent[]> {
-    return await Rent.find({ lockerId });
+  async findByLockerId(lockerId: string): Promise<IRent | null> {
+    return await Rent.findOne({ lockerId });
   }
 
   async findActiveRents(): Promise<IRent[]> {

@@ -32,6 +32,14 @@ export class RentService implements IRentService {
     return await this.rentRepository.findAll();
   }
 
+  async updateRent(id: string, rent: Partial<IRent>): Promise<IRent | null> {
+    return await this.rentRepository.update(id, rent);
+  }
+
+  async deleteRent(id: string): Promise<boolean> {
+    return await this.rentRepository.delete(id);
+  }
+
   async updateRentStatus(id: string, status: RentStatus): Promise<IRent | null> {
     const rent = await this.rentRepository.findById(id);
     if (!rent) {
@@ -49,7 +57,7 @@ export class RentService implements IRentService {
     return await this.rentRepository.findActiveRents();
   }
 
-  async getRentsByLockerId(lockerId: string): Promise<IRent[]> {
+  async getRentByLockerId(lockerId: string): Promise<IRent | null> {
     return await this.rentRepository.findByLockerId(lockerId);
   }
 }

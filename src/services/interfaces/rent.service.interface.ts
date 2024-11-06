@@ -7,5 +7,5 @@ export interface IRentService {
   getAllRents(): Promise<IRent[]>;
   updateRentStatus(id: string, status: RentStatus): Promise<IRent | null>;
   getActiveRents(): Promise<IRent[]>;
-  getRentsByLockerId(lockerId: string): Promise<IRent[]>;
+  getRentByLockerId(lockerId: string): Promise<IRent | null>;
 }

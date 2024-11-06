@@ -64,16 +64,16 @@ export class RentController {
     }
   }
 
-  async getRentsByLocker(req: Request, res: Response): Promise<void> {
+  async getRentByLocker(req: Request, res: Response): Promise<void> {
     try {
-      const rents = await this.rentService.getRentsByLockerId(req.params.lockerId);
+      const rents = await this.rentService.getRentByLockerId(req.params.lockerId);
       if (!rents) {
-        res.status(404).json({ error: 'Rents not found' });
+        res.status(404).json({ error: 'Rent not found' });
         return;
       }
       res.json(rents);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to get rents by locker' });
+      res.status(500).json({ error: 'Failed to get rent by locker' });
     }
   }
 }
