@@ -30,3 +30,4 @@ npm run test:integration
 - Add an authorization layer
 - Write more integration tests.
 - Add logger to give more visibility.
+- Add Swagger to document the API.
